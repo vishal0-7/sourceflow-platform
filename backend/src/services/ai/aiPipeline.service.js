@@ -1,19 +1,20 @@
 /**
  * Central AI Pipeline Service
- * Coordinates document text retrieval, prompt formulation, OpenAI structured execution,
+ * Coordinates document text retrieval, prompt formulation, Google Gemini structured execution,
  * PostgreSQL database persistence in public.ai_requests, and format mapping for the SourceFlow UI.
  */
 
 import crypto from 'crypto';
 import { promptService } from './prompt.service.js';
-import { openaiService } from './openai.service.js';
+import { geminiService } from './gemini.service.js';
 import { ocrService } from '../ocr/ocr.service.js';
 import { storageService } from '../storage.service.js';
 import { getSupabaseClient, isSupabaseConfigured } from '../../config/supabase.js';
+import { env } from '../../config/env.js';
 import { aiRequests, documents } from '../dataStore.js';
 
 export class AiPipelineService {
-  constructor(aiClient = openaiService) {
+  constructor(aiClient = geminiService) {
     this.ai = aiClient;
   }
 
@@ -87,19 +88,21 @@ export class AiPipelineService {
     }
 
     // 4. In-memory demo documents fallback
-    const demoDoc = documents.find(d => d.id === fileId || d.stored_name === fileId);
-    if (demoDoc) {
-      const mockText = `SourceFlow Institutional Record: ${demoDoc.title || demoDoc.name}\n` +
-        `Summary: Enterprise boundary firewalls and perimeter sensors mitigated 1,420,000 intrusion attempts.\n` +
-        `Operational Telemetry: Scada monitoring gateways recorded an estimated 38.4% reduction in dwell time across regional nodes.\n` +
-        `Risk: Critical CVE-2026-2144 identified in perimeter SCADA ingress telemetry.\n` +
-        `Action: Mandatory cryptographic firmware signing v4.2 recommended within 72 hours.`;
+    if (env.DEMO_MODE) {
+      const demoDoc = documents.find(d => d.id === fileId || d.stored_name === fileId);
+      if (demoDoc) {
+        const mockText = `SourceFlow Institutional Record: ${demoDoc.title || demoDoc.name}\n` +
+          `Summary: Enterprise boundary firewalls and perimeter sensors mitigated 1,420,000 intrusion attempts.\n` +
+          `Operational Telemetry: Scada monitoring gateways recorded an estimated 38.4% reduction in dwell time across regional nodes.\n` +
+          `Risk: Critical CVE-2026-2144 identified in perimeter SCADA ingress telemetry.\n` +
+          `Action: Mandatory cryptographic firmware signing v4.2 recommended within 72 hours.`;
 
-      return {
-        text: mockText,
-        fileId,
-        sourceType: 'MOCK_DOCUMENT_TEXT'
-      };
+        return {
+          text: mockText,
+          fileId,
+          sourceType: 'MOCK_DOCUMENT_TEXT'
+        };
+      }
     }
 
     const notFoundErr = new Error(`Could not find document or extracted text for ID '${fileId}'. Please upload or extract the file first.`);
@@ -127,7 +130,7 @@ export class AiPipelineService {
     let errorMessage = null;
 
     try {
-      // 2. Call OpenAI Structured Output Service
+      // 2. Call Gemini Structured Output Service
       result = await this.ai.executeStructuredPrompt(
         {
           ...promptPayload,

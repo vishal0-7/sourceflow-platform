@@ -8,7 +8,7 @@
  * - Government Data: GET /api/gov/datasets, GET /api/gov/datasets/:id
  * - Email Campaigns: POST /api/email/campaigns, GET /api/email/campaigns, GET /api/email/campaigns/:id, POST /api/email/campaigns/:id/send
  * 
- * Note: These endpoints require backend external API key integrations (OpenAI, OCR vendor, Gov Data API, SMTP).
+ * Note: These endpoints require backend external API key integrations (Gemini, OCR vendor, Gov Data API, SMTP).
  * The client abstractions below are fully typed and ready to communicate with the backend as those services are deployed.
  */
 
@@ -41,7 +41,7 @@ export const ocrService = {
 };
 
 // ----------------------------------------------------
-// AI Services Abstraction (OpenAI through backend)
+// AI Services Abstraction (Gemini through backend)
 // ----------------------------------------------------
 export interface AiSummaryResult {
   summary: string;

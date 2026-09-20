@@ -79,7 +79,9 @@ export const OverviewPage: React.FC = () => {
                         {unsupportedClaimsCount} claims require verification
                       </span>
                       <span>•</span>
-                      <span>Page 14 & Page 19 telemetry discrepancies</span>
+                      <span>
+                        {Array.from(new Set(transformation.claims.filter(c => c.status === 'NEEDS_REVIEW' || c.status === 'UNSUPPORTED').map(c => `Page ${c.pageNumber}`))).join(' & ') || 'telemetry discrepancies'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -101,7 +103,7 @@ export const OverviewPage: React.FC = () => {
                       All active claims verified
                     </h3>
                     <p className="text-xs text-stone-500">
-                      23 of 23 assertions anchored to source document with zero discrepancies.
+                      {transformation.claims.length} of {transformation.claims.length} assertions anchored to source document with zero discrepancies.
                     </p>
                   </div>
                 </div>

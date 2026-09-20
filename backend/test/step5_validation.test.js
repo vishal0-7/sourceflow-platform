@@ -498,7 +498,7 @@ async function runStep5Suite() {
     const forbiddenPatterns = [
       'SUPABASE_SECRET_KEY',
       'SUPABASE_SERVICE_ROLE_KEY',
-      'OPENAI_API_KEY',
+      'GEMINI_API_KEY',
       'OCR_API_KEY'
     ];
 

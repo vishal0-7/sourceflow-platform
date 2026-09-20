@@ -1,5 +1,5 @@
 /**
- * Comprehensive Test Suite for Step 7: Real OpenAI Backend Integration
+ * Comprehensive Test Suite for Step 7: Real Gemini Backend Integration
  * Tests:
  * 1. analyze operation (Structured Output mapped to SourceFlow AnalysisSummary)
  * 2. summarize, extract, generate, and classify operations
@@ -11,13 +11,13 @@
 
 import assert from 'assert';
 import { promptService, DELIMITER_START, DELIMITER_END, sanitizeUntrustedText } from '../src/services/ai/prompt.service.js';
-import { OpenAIService } from '../src/services/ai/openai.service.js';
+import { GeminiService } from '../src/services/ai/gemini.service.js';
 import { AiPipelineService } from '../src/services/ai/aiPipeline.service.js';
 import { ocrService } from '../src/services/ocr/ocr.service.js';
 import { aiRequests } from '../src/services/dataStore.js';
 
 console.log('\n=============================================================');
-console.log('🧪 RUNNING REAL OPENAI BACKEND INTEGRATION TEST SUITE');
+console.log('🧪 RUNNING REAL GEMINI BACKEND INTEGRATION TEST SUITE');
 console.log('=============================================================\n');
 
 let passedTests = 0;
@@ -159,7 +159,7 @@ await runTest('3. All remaining operations (summarize, extract, generate, classi
 // -----------------------------------------------------------------------------
 await runTest('4. Missing API key, rate limits, and timeouts are handled with appropriate error codes', async () => {
   // 4a. Missing key when DEMO_MODE is false
-  const unconfiguredService = new OpenAIService('');
+  const unconfiguredService = new GeminiService('');
   let caughtMissingKeyErr = null;
   try {
     await unconfiguredService.executeStructuredPrompt({
@@ -170,7 +170,7 @@ await runTest('4. Missing API key, rate limits, and timeouts are handled with ap
     caughtMissingKeyErr = err;
   }
   assert(caughtMissingKeyErr !== null);
-  assert.strictEqual(caughtMissingKeyErr.code, 'OPENAI_KEY_MISSING');
+  assert.strictEqual(caughtMissingKeyErr.code, 'GEMINI_KEY_MISSING');
   assert.strictEqual(caughtMissingKeyErr.statusCode, 503);
 
   // 4b. Rate limit error handling

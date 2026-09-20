@@ -133,27 +133,36 @@ export const Stage01Source: React.FC<Stage01SourceProps> = ({ onContinue }) => {
 
   const handleImportGovDataset = async (dataset: GovDataset) => {
     setIsProcessing(true);
-    const content = dataset.sampleTelemetry || `${dataset.title.toUpperCase()}\nAgency: ${dataset.agency}\nReference: ${dataset.url}\nLast Updated: ${dataset.lastUpdated}\n\nSummary:\n${dataset.summary}`;
-    const blob = new Blob([content], { type: 'text/plain' });
-    const file = new File([blob], `${dataset.title.slice(0, 45)}.txt`, { type: 'text/plain' });
-    await uploadSourceFile(file);
-    setIsProcessing(false);
+    try {
+      const content = dataset.sampleTelemetry || `${dataset.title.toUpperCase()}\nAgency: ${dataset.agency}\nReference: ${dataset.url}\nLast Updated: ${dataset.lastUpdated}\n\nSummary:\n${dataset.summary}`;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const file = new File([blob], `${dataset.title.slice(0, 45)}.txt`, { type: 'text/plain' });
+      await uploadSourceFile(file);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const supportedFormats = ['PDF', 'DOCX', 'XLSX', 'TXT', 'PNG', 'JPG', 'MP4', 'URL'];
 
   const handleProcessFile = async (file: File) => {
     setIsProcessing(true);
-    await uploadSourceFile(file);
-    setIsProcessing(false);
+    try {
+      await uploadSourceFile(file);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleIngestUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sourceUrl.trim()) return;
     setIsProcessing(true);
-    await ingestSourceUrl(sourceUrl.trim());
-    setIsProcessing(false);
+    try {
+      await ingestSourceUrl(sourceUrl.trim());
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDrop = async (e: React.DragEvent) => {
@@ -166,19 +175,27 @@ export const Stage01Source: React.FC<Stage01SourceProps> = ({ onContinue }) => {
 
   const handleSelectPreset = async () => {
     setIsProcessing(true);
-    // Real calculation with demo mock blob
-    const sampleContent = `CYBERSECURITY THREAT INTELLIGENCE RESEARCH REPORT\nAssessment: Advanced Persistent Threat Telemetry\nScope: 20 Pages, 23 Claims, 1420000 Perimeter Ingress Signals.`;
-    const blob = new Blob([sampleContent], { type: 'application/pdf' });
-    const file = new File([blob], 'Cybersecurity Threat Intelligence Research Report.pdf', { type: 'application/pdf' });
-    await uploadSourceFile(file);
-    setIsProcessing(false);
+    try {
+      // Real calculation with demo mock blob
+      const sampleContent = `CYBERSECURITY THREAT INTELLIGENCE RESEARCH REPORT\nAssessment: Advanced Persistent Threat Telemetry\nScope: 20 Pages, 23 Claims, 1420000 Perimeter Ingress Signals.`;
+      const blob = new Blob([sampleContent], { type: 'application/pdf' });
+      const file = new File([blob], 'Cybersecurity Threat Intelligence Research Report.pdf', { type: 'application/pdf' });
+      await uploadSourceFile(file);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleAnalyzeAndProceed = async () => {
     setIsProcessing(true);
-    await analyzeSource();
-    setIsProcessing(false);
-    onContinue();
+    try {
+      await analyzeSource();
+      onContinue();
+    } catch (err) {
+      // Handled via toast in AppContext
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -487,9 +504,9 @@ export const Stage01Source: React.FC<Stage01SourceProps> = ({ onContinue }) => {
                   <span>•</span>
                   <span>{transformation.source.size}</span>
                   <span>•</span>
-                  <span>{transformation.source.pages} pages</span>
+                  <span>{transformation.source.pages || 0} pages</span>
                   <span>•</span>
-                  <span>23 verifiable claims</span>
+                  <span>{transformation.claims?.length || 0} verifiable claims</span>
                 </div>
               </div>
             </div>
@@ -505,7 +522,7 @@ export const Stage01Source: React.FC<Stage01SourceProps> = ({ onContinue }) => {
               </span>
             </div>
             <span className="text-[10px] text-emerald-700 font-semibold uppercase tracking-wider flex-shrink-0 pl-2">
-              Verified
+              {transformation.source.sha256 ? 'Verified' : 'Pending'}
             </span>
           </div>
 
@@ -580,12 +597,12 @@ export const Stage01Source: React.FC<Stage01SourceProps> = ({ onContinue }) => {
             )}
           </div>
 
-          {/* AI Processing (OpenAI Integration) */}
+          {/* AI Processing (Gemini Integration) */}
           <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-700" />
-                <span className="text-xs font-semibold text-stone-800">AI Intelligence (OpenAI)</span>
+                <span className="text-xs font-semibold text-stone-800">AI Intelligence (Gemini)</span>
               </div>
 
               {aiState.status === 'idle' && (
@@ -750,7 +767,7 @@ export const Stage01Source: React.FC<Stage01SourceProps> = ({ onContinue }) => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-400">Claim Grounding Surface:</span>
-                  <span className="text-stone-800 font-semibold">20 Pages (Exact Passages Mapped)</span>
+                  <span className="text-stone-800 font-semibold">{transformation.source.pages || 0} Pages (Exact Passages Mapped)</span>
                 </div>
               </div>
             )}

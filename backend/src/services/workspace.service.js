@@ -32,6 +32,11 @@ export class WorkspaceService {
    * Lists all workspaces where user is an authorized member or creator.
    */
   async listUserWorkspaces(userId) {
+    const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    if (!isUuid(userId)) {
+      return inMemoryWorkspaces.filter(w => w.createdBy === userId || w.created_by === userId);
+    }
+
     if (isSupabaseConfigured() && !isCircuitOpen()) {
       const supabase = getSupabaseClient();
       try {
@@ -163,11 +168,14 @@ export class WorkspaceService {
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseClient();
       try {
+        const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+        const validUserId = isUuid(userId) ? userId : null;
+
         const payload = {
           name: name.trim(),
           description: description || '',
           workspace_type: type || 'operations',
-          created_by: userId
+          created_by: validUserId
         };
 
         const { data: newWs, error: wsError } = await supabase
@@ -182,26 +190,32 @@ export class WorkspaceService {
         }
 
         if (newWs) {
-          // Register creator in workspace_members
-          await supabase.from('workspace_members').insert({
-            workspace_id: newWs.id,
-            user_id: userId,
-            role: 'owner'
-          });
+          // Register creator in workspace_members if valid UUID
+          if (validUserId) {
+            await supabase.from('workspace_members').insert({
+              workspace_id: newWs.id,
+              user_id: validUserId,
+              role: 'owner'
+            });
+          }
 
-          return {
+          await workspaceMemberService.addMember(newWs.id, userId, 'owner').catch(() => {});
+
+          const createdResult = {
             id: newWs.id,
             name: newWs.name,
             description: newWs.description || '',
             type: newWs.workspace_type || 'operations',
             workspace_type: newWs.workspace_type || 'operations',
-            createdBy: newWs.created_by,
+            createdBy: userId,
             created_by: newWs.created_by,
             createdAt: newWs.created_at,
             created_at: newWs.created_at,
             members: 1,
             dashboards: []
           };
+          inMemoryWorkspaces.unshift(createdResult);
+          return createdResult;
         }
       } catch (err) {
         if (!env.DEMO_MODE) {

@@ -20,14 +20,14 @@ export const Stage04Generate: React.FC<Stage04GenerateProps> = ({ onComplete }) 
   const [completedMilestones, setCompletedMilestones] = useState<number>(0);
 
   const milestones = [
-    { title: 'Source understood', desc: 'Ingested 20 pages, 2.8 MB threat intelligence report' },
-    { title: 'Context extracted', desc: 'Identified 18 key entities and chronological breach timeline' },
-    { title: 'Audience requirements mapped', desc: 'Synthesized tone profiles for Executive, Cyber, and Media' },
-    { title: 'Important facts identified', desc: 'Isolated 23 verifiable assertions with page citations' },
+    { title: 'Source understood', desc: `Ingested ${transformation.source?.pages || 20} pages, ${transformation.source?.name || 'source telemetry'}` },
+    { title: 'Context extracted', desc: 'Identified core structural entities and breach chronology' },
+    { title: 'Audience requirements mapped', desc: 'Synthesized tone profiles across configured audience templates' },
+    { title: 'Important facts identified', desc: `Isolated ${transformation.claims?.length || 23} verifiable assertions with citations` },
     { title: 'Executive Summary generated', desc: 'One-page strategic briefing for leadership' },
     { title: 'Advisory generated', desc: 'Deep technical telemetry with remediation protocols' },
     { title: 'Presentation generated', desc: 'Slide-ready briefing artefacts synthesized' },
-    { title: 'Verification engine running...', desc: 'Cross-referencing 23 claims against source passages' }
+    { title: 'Verification engine running...', desc: `Cross-referencing ${transformation.claims?.length || 23} claims against source passages` }
   ];
 
   useEffect(() => {

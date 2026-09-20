@@ -8,7 +8,7 @@ import { Stage05Review } from '../components/transform/Stage05Review';
 import { Stage06Deliver } from '../components/transform/Stage06Deliver';
 
 export const TransformPage: React.FC = () => {
-  const { unsupportedClaimsCount } = useAppStore();
+  const { unsupportedClaimsCount, transformation } = useAppStore();
   const [currentStage, setCurrentStage] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
 
   const stages = [
@@ -19,7 +19,7 @@ export const TransformPage: React.FC = () => {
     {
       num: 5,
       label: '05 Review',
-      badge: unsupportedClaimsCount > 0 ? `${unsupportedClaimsCount} review` : '✓ 23'
+      badge: unsupportedClaimsCount > 0 ? `${unsupportedClaimsCount} review` : `✓ ${transformation.claims?.length || 0}`
     },
     { num: 6, label: '06 Deliver' }
   ];

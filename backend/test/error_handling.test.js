@@ -103,7 +103,7 @@ async function runErrorHandlingTests() {
     testApp.get('/err/429', () => { throw new RateLimitError('AI quota reached.', ErrorCodes.AI_RATE_LIMITED); });
     testApp.get('/err/500-db', () => { throw new DatabaseError('PostgreSQL constraint violation.', ErrorCodes.DATABASE_ERROR); });
     testApp.get('/err/502-ocr', () => { throw new ExternalProviderError('OCR.Space API failed.', ErrorCodes.OCR_FAILED); });
-    testApp.get('/err/504-ai', () => { throw new ProviderTimeoutError('OpenAI inference timeout.', ErrorCodes.AI_TIMEOUT); });
+    testApp.get('/err/504-ai', () => { throw new ProviderTimeoutError('Gemini inference timeout.', ErrorCodes.AI_TIMEOUT); });
 
     testApp.use(errorMiddleware);
 

@@ -1,6 +1,6 @@
 /**
  * AI Service Routes
- * STEP 7: Official OpenAI Integration Routes
+ * STEP 7: Official Gemini Integration Routes
  * 
  * Endpoints:
  * - POST /api/ai/summarize  -> Executive summary

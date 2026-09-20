@@ -22,7 +22,9 @@ export const REQUIRED_TABLES = [
   'transformations',
   'claims',
   'outputs',
-  'audit_logs'
+  'audit_logs',
+  'translations',
+  'government_datasets'
 ];
 
 export class DatabaseService {
@@ -109,7 +111,9 @@ export class DatabaseService {
       'transformations.workspace_id -> workspaces.id': /workspace_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+public\.workspaces\(id\)/i.test(content),
       'claims.transformation_id -> transformations.id': /transformation_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+public\.transformations\(id\)/i.test(content),
       'outputs.transformation_id -> transformations.id': /transformation_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+public\.transformations\(id\)/i.test(content),
-      'audit_logs.workspace_id -> workspaces.id': /workspace_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+public\.workspaces\(id\)/i.test(content)
+      'audit_logs.workspace_id -> workspaces.id': /workspace_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+public\.workspaces\(id\)/i.test(content),
+      'translations.workspace_id -> workspaces.id': /workspace_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+public\.workspaces\(id\)/i.test(content),
+      'government_datasets.workspace_id -> workspaces.id': /workspace_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+public\.workspaces\(id\)/i.test(content)
     };
 
     return {

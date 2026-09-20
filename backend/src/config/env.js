@@ -45,9 +45,9 @@ export const env = {
   },
 
   // External AI & OCR Services
-  OPENAI_API_KEY: (process.env.OPENAI_API_KEY || '').trim(),
-  OPENAI_MODEL: (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim(),
-  OPENAI_TIMEOUT_MS: parseInt(process.env.OPENAI_TIMEOUT_MS || '60000', 10),
+  GEMINI_API_KEY: (process.env.GEMINI_API_KEY || '').trim(),
+  GEMINI_MODEL: (process.env.GEMINI_MODEL === 'gemini-2.5-flash' ? 'gemini-3.6-flash' : (process.env.GEMINI_MODEL || 'gemini-3.6-flash')).trim(),
+  GEMINI_TIMEOUT_MS: parseInt(process.env.GEMINI_TIMEOUT_MS || '60000', 10),
   MAX_AI_INPUT_CHARS: parseInt(process.env.MAX_AI_INPUT_CHARS || '60000', 10),
   OCR_API_KEY: (process.env.OCR_API_KEY || '').trim(),
   OCR_TIMEOUT_MS: parseInt(process.env.OCR_TIMEOUT_MS || '30000', 10),

@@ -42,7 +42,28 @@ export class AuthController {
    * Supports Supabase Auth or explicit DEMO_MODE login
    */
   async login(req, res) {
-    const { email, password } = req.body || {};
+    const { email, password, isDemo } = req.body || {};
+
+    // Explicit DEMO_MODE login flow when DEMO_MODE is active
+    if (env.DEMO_MODE && (isDemo || email?.endsWith('@sourceflow.demo') || email?.endsWith('@sourceflow.io') || !isSupabaseConfigured())) {
+      const updated = updateUserProfile({
+        email: email || userProfile.email,
+        lastActive: new Date().toISOString()
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          user: {
+            ...updated,
+            isDemo: true
+          },
+          token: DEMO_ACCESS_TOKEN
+        },
+        message: 'Login successful (DEMO_MODE).',
+        timestamp: new Date().toISOString()
+      });
+    }
 
     // 1. Production Supabase Auth flow
     if (isSupabaseConfigured()) {

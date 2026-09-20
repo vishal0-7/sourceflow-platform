@@ -262,3 +262,67 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ==============================================================================
+-- 11. TRANSLATIONS TABLE
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.translations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    file_id UUID REFERENCES public.files(id) ON DELETE SET NULL,
+    source_language TEXT NOT NULL,
+    target_language TEXT NOT NULL,
+    source_text TEXT NOT NULL,
+    translated_text TEXT NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'libretranslate',
+    status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('processing', 'completed', 'failed')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_translations_workspace ON public.translations(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_translations_user ON public.translations(user_id);
+CREATE INDEX IF NOT EXISTS idx_translations_file ON public.translations(file_id);
+CREATE INDEX IF NOT EXISTS idx_translations_status ON public.translations(status);
+CREATE INDEX IF NOT EXISTS idx_translations_created_at ON public.translations(created_at DESC);
+
+-- ==============================================================================
+-- 12. GOVERNMENT DATASETS TABLE
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.government_datasets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    dataset_id TEXT NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'data.gov.in',
+    title TEXT NOT NULL,
+    agency TEXT,
+    url TEXT,
+    category TEXT,
+    summary TEXT,
+    record_count INTEGER DEFAULT 0,
+    last_fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_gov_dataset_workspace_provider UNIQUE (workspace_id, dataset_id, provider)
+);
+
+CREATE INDEX IF NOT EXISTS idx_government_datasets_workspace_id ON public.government_datasets(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_government_datasets_provider ON public.government_datasets(provider);
+CREATE INDEX IF NOT EXISTS idx_government_datasets_created_at ON public.government_datasets(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_government_datasets_dataset_id ON public.government_datasets(dataset_id);
+-- ==============================================================================
+-- ROW LEVEL SECURITY ENFORCEMENT
+-- ==============================================================================
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ocr_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transformations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.claims ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.outputs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.translations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.government_datasets ENABLE ROW LEVEL SECURITY;

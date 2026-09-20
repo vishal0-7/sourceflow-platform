@@ -150,7 +150,7 @@ SourceFlow (TRUST-X) is a trusted-information transformation platform that conve
 - Node.js
 - Express
 - Supabase
-- OpenAI integration
+- Gemini integration
 - OCR services
 
 ### Infrastructure

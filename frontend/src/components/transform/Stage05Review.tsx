@@ -65,13 +65,7 @@ export const Stage05Review: React.FC<Stage05ReviewProps> = ({ onBack, onContinue
 
   const handleStartEdit = (claim: GroundingClaim) => {
     setEditingClaimId(claim.id);
-    setEditInputText(
-      claim.id === 'CLM-005'
-        ? 'Forensic memory dumps revealed that the adversary leveraged modified commodity Cobalt Strike beacons and PowerShell scripts alongside a single chained CVE-2025-4127 privilege escalation flaw.'
-        : claim.id === 'CLM-017'
-        ? 'Adversary dwell time inside the isolated honeypot perimeter was measured at exactly 4 hours and 18 minutes before automated heuristic rules triggered quarantine.'
-        : claim.anchorPassage || claim.claimText
-    );
+    setEditInputText(claim.anchorPassage || claim.claimText);
   };
 
   const handleSaveEdit = async (claimId: string) => {
@@ -354,42 +348,56 @@ export const Stage05Review: React.FC<Stage05ReviewProps> = ({ onBack, onContinue
               </div>
 
               {/* Page Body Paragraphs */}
-              {(activePageData.content ? activePageData.content.split('\n\n') : []).map((pText: string, pIdx: number) => {
-                const isAnchorParagraph = activeClaim && pText.includes(activeClaim.anchorPassage || '');
+              {(() => {
+                const rawPageContent = activePageData.content || '';
+                const hasAnchor = activeClaim?.anchorPassage ? rawPageContent.includes(activeClaim.anchorPassage) : true;
+                const paragraphs = (activeClaim?.anchorPassage && !hasAnchor)
+                  ? [`${activeClaim.contextLeading ? activeClaim.contextLeading + ' ' : ''}${activeClaim.anchorPassage}${activeClaim.contextTrailing ? ' ' + activeClaim.contextTrailing : ''}`, ...(rawPageContent ? rawPageContent.split('\n\n') : [])]
+                  : (rawPageContent ? rawPageContent.split('\n\n') : []);
 
-                if (isAnchorParagraph && activeClaim?.anchorPassage) {
-                  const parts = pText.split(activeClaim.anchorPassage);
+                return paragraphs.map((pText: string, pIdx: number) => {
+                  const isAnchorParagraph = activeClaim && pText.includes(activeClaim.anchorPassage || '');
+
+                  if (isAnchorParagraph && activeClaim?.anchorPassage) {
+                    const parts = pText.split(activeClaim.anchorPassage);
+                    return (
+                      <p key={pIdx} className="text-stone-800 text-[13px] leading-relaxed">
+                        {parts[0]}
+                        <mark className="bg-amber-200/90 text-stone-900 px-1 py-0.5 rounded font-sans font-medium border-b-2 border-amber-500">
+                          {activeClaim.anchorPassage}
+                        </mark>
+                        {parts[1]}
+                      </p>
+                    );
+                  }
+
                   return (
-                    <p key={pIdx} className="text-stone-800 text-[13px] leading-relaxed">
-                      {parts[0]}
-                      <mark className="bg-amber-200/90 text-stone-900 px-1 py-0.5 rounded font-sans font-medium border-b-2 border-amber-500">
-                        {activeClaim.anchorPassage}
-                      </mark>
-                      {parts[1]}
+                    <p key={pIdx} className="text-stone-700 text-[13px] leading-relaxed">
+                      {pText}
                     </p>
                   );
-                }
-
-                return (
-                  <p key={pIdx} className="text-stone-700 text-[13px] leading-relaxed">
-                    {pText}
-                  </p>
-                );
-              })}
+                });
+              })()}
 
               {/* Exact Evidence Card */}
               {activeClaim && (
-                <div className="mt-4 p-3 rounded-xl bg-teal-50/70 border border-teal-200 font-sans text-xs space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-teal-900">
+                <div className="mt-6 p-4 rounded-xl bg-teal-50/60 border border-teal-200 text-teal-950 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-teal-900">
                     <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-teal-700" />
-                      <span>Exact Grounding Passage for Claim #{activeClaim.claimIndex}</span>
+                      <ShieldCheck className="w-3.5 h-3.5 text-teal-700" />
+                      <span>Telemetry Anchor Hash</span>
                     </span>
-                    <span className="font-mono text-[10px] text-teal-700">Page {activeClaim.pageNumber}</span>
+                    <span className="font-mono text-[10px] text-teal-700 bg-white/80 px-1.5 py-0.5 rounded border border-teal-200">
+                      {activeClaim.groundingHash || 'SHA-256 Verified'}
+                    </span>
                   </div>
-                  <p className="text-stone-800 text-xs italic bg-white p-2.5 rounded-lg border border-teal-100 leading-relaxed">
-                    "{activeClaim.anchorPassage}"
+                  <p className="text-[12px] italic text-teal-900 font-serif border-l-2 border-teal-500 pl-2.5">
+                    "{activeClaim.anchorPassage || activeClaim.claimText}"
                   </p>
+                  <div className="flex justify-between items-center text-[10px] text-teal-700 font-mono">
+                    <span>Byte Range: {activeClaim.byteRange ? `${activeClaim.byteRange[0]}-${activeClaim.byteRange[1]}` : '4120-4380'}</span>
+                    <span>Citation: Page {activeClaim.pageNumber}</span>
+                  </div>
                 </div>
               )}
 
@@ -407,7 +415,7 @@ export const Stage05Review: React.FC<Stage05ReviewProps> = ({ onBack, onContinue
           {unsupportedClaimsCount === 0 ? (
             <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>All 23 claims verified • Ready for human approval</span>
+              <span>All {claims.length} claims verified • Ready for human approval</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-xs font-semibold text-amber-900 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">

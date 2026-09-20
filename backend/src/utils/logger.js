@@ -2,7 +2,7 @@
  * Institutional Security & Audit Logger
  * Automatically sanitizes sensitive data:
  * - Redacts Bearer tokens and JWTs
- * - Redacts OpenAI, OCR, and external API keys
+ * - Redacts Gemini, OCR, and external API keys
  * - Masks password and credential fields
  * - Truncates raw document text to prevent confidential data leakage in log sinks
  * - Formats logs with structured Request IDs (e.g. req_8a91f3) for end-to-end request tracing
@@ -47,26 +47,39 @@ export function requestIdMiddleware(req, res, next) {
   next();
 }
 
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Sanitizes strings for sensitive tokens and keys.
  */
 export function sanitizeString(str) {
   if (typeof str !== 'string') return str;
 
-  return str
+  let sanitized = str
     // Redact Bearer tokens
     .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [REDACTED]')
-    // Redact OpenAI API keys
-    .replace(/sk-[A-Za-z0-9_-]{20,}/g, 'sk-[REDACTED]')
-    .replace(new RegExp(process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.trim() : '___NONE___', 'g'), '[REDACTED_OPENAI_KEY]')
+    // Redact Gemini API keys
+    .replace(/AIzaSy[0-9a-zA-Z_-]{33}/g, '[REDACTED_GEMINI_KEY]')
     // Redact generic JWT tokens
     .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*/g, 'eyJ[REDACTED_JWT]')
     // Redact OCR.Space API keys (typically starts with K followed by digits/letters or dynamic env key)
     .replace(/K[0-9A-Za-z]{10,}/g, '[REDACTED_OCR_KEY]')
-    // Redact specific configured OCR_API_KEY if present
-    .replace(new RegExp(process.env.OCR_API_KEY ? process.env.OCR_API_KEY.trim() : '___NONE___', 'g'), '[REDACTED_OCR_KEY]')
     // Redact passwords in connection strings: postgres://user:password@host
     .replace(/(postgres(?:ql)?:\/\/[^:]+:)([^@]+)(@)/gi, '$1[REDACTED]$3');
+
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 5) {
+    const escaped = escapeRegExp(process.env.GEMINI_API_KEY.trim());
+    sanitized = sanitized.replace(new RegExp(escaped, 'g'), '[REDACTED_GEMINI_KEY]');
+  }
+
+  if (process.env.OCR_API_KEY && process.env.OCR_API_KEY.trim().length > 5) {
+    const escaped = escapeRegExp(process.env.OCR_API_KEY.trim());
+    sanitized = sanitized.replace(new RegExp(escaped, 'g'), '[REDACTED_OCR_KEY]');
+  }
+
+  return sanitized;
 }
 
 /**

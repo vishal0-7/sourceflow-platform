@@ -23,7 +23,7 @@ This document is the authoritative operations runbook for deploying and operatin
                       │          │             │
         ┌─────────────┴──┐       │       ┌─────┴──────────────┐
         ▼                ▼       ▼       ▼                    ▼
-   [ OpenAI ]       [ OCR.Space ] ─ [ LibreTranslate ]   [ data.gov.in / API Setu ]
+   [ Gemini ]       [ OCR.Space ] ─ [ LibreTranslate ]   [ data.gov.in / API Setu ]
         │
         ▼
    [ DATA PERSISTENCE & STORAGE LAYER ]
@@ -53,7 +53,7 @@ npm install
 
 # 3. Configure backend local environment
 cp backend/.env.example backend/.env
-# Edit backend/.env if using real Supabase or OpenAI credentials.
+# Edit backend/.env if using real Supabase or Gemini credentials.
 # For zero-config offline development, set: DEMO_MODE=true
 
 # 4. Configure frontend local environment
@@ -81,7 +81,7 @@ npm run dev:frontend   # Starts Vite SPA at http://localhost:5173
 | `SUPABASE_URL` | **Yes** | `https://xyz.supabase.co` | `https://prod-project.supabase.co` | Base URL of the dedicated production Supabase project. |
 | `SUPABASE_ANON_KEY` | **Yes** | `eyJhb...` | `eyJhb...` | Public/anon API key for Supabase client initialization. |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | `eyJhb...` | `eyJhb...` | **RESTRICTED**: Private service key for backend admin operations. **NEVER** expose to client. |
-| `OPENAI_API_KEY` | **Yes** | `sk-...` | `sk-proj-...` | Production OpenAI API key for analysis and transformation generation. |
+| `GEMINI_API_KEY` | **Yes** | `AIzaSy...` | `AIzaSy...` | Production Gemini API key for analysis and transformation generation. |
 | `OCR_API_KEY` | **Yes** | `helloworld` | `<your-licensed-ocr-key>` | OCR.Space engine key for scanned document text extraction. |
 | `LIBRETRANSLATE_URL` | No | `https://translate.argosopentech.com` | `https://translate.yourdomain.com` | Self-hosted or hosted LibreTranslate base URL. |
 | `LIBRETRANSLATE_API_KEY` | No | `""` | `<your-libre-api-key>` | Optional API key for private translation service instance. |
@@ -99,7 +99,7 @@ npm run dev:frontend   # Starts Vite SPA at http://localhost:5173
 | `VITE_DEMO_MODE` | **Yes** | `false` | **`false`** | Enforces live API calls and disables mock client data. |
 
 > [!WARNING]
-> **NO SECRETS IN FRONTEND**: Never prefix private API keys (`OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) with `VITE_`. Any variable starting with `VITE_` is compiled into public client JavaScript bundles.
+> **NO SECRETS IN FRONTEND**: Never prefix private API keys (`GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) with `VITE_`. Any variable starting with `VITE_` is compiled into public client JavaScript bundles.
 
 ---
 
@@ -207,7 +207,7 @@ docker run -p 5000:5000 \
   -e SUPABASE_URL=https://<project-ref>.supabase.co \
   -e SUPABASE_ANON_KEY=<anon-key> \
   -e SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
-  -e OPENAI_API_KEY=sk-proj-... \
+  -e GEMINI_API_KEY=AIzaSy... \
   -e OCR_API_KEY=... \
   sourceflow-backend:latest
 ```
@@ -229,7 +229,7 @@ Before moving production traffic to SourceFlow, verify all 25 controls:
 - [ ] 1. `DEMO_MODE` is strictly set to `false` in backend environment.
 - [ ] 2. `VITE_DEMO_MODE` is strictly set to `false` in frontend environment.
 - [ ] 3. No `.env` or credential files are tracked in Git (`git status --porcelain` is clean).
-- [ ] 4. All secrets (`OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are managed via encrypted environment injection.
+- [ ] 4. All secrets (`GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are managed via encrypted environment injection.
 
 ### Network & Security
 - [ ] 5. Frontend and Backend both enforce HTTPS (TLS 1.3 preferred).
@@ -253,7 +253,7 @@ Before moving production traffic to SourceFlow, verify all 25 controls:
 
 ### Pipelines & Providers
 - [ ] 19. OCR.Space API key configured with timeout fallback handling.
-- [ ] 20. OpenAI API key configured with rate-limit and quota error trapping.
+- [ ] 20. Gemini API key configured with rate-limit and quota error trapping.
 - [ ] 21. Multi-stage transformation human approval gate blocks unverified claims.
 - [ ] 22. LibreTranslate endpoint reachable with timeout safeguards.
 

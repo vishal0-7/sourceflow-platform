@@ -74,7 +74,7 @@ export const SearchPalette: React.FC = () => {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search across 23 claims, documents, hashes, citations... (Esc to exit)"
+            placeholder="Search across claims, documents, hashes, citations... (Esc to exit)"
             className="w-full bg-transparent font-body-md text-sm text-on-surface focus:outline-none placeholder:text-on-surface-variant"
           />
           <button

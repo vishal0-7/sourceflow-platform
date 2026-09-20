@@ -1,6 +1,6 @@
 /**
- * STEP 7: OPENAI AI PROCESSING VERIFICATION SUITE
- * Tests Scenarios A through O against live Supabase PostgreSQL, Supabase Storage, and official OpenAI API.
+ * STEP 7: GEMINI AI PROCESSING VERIFICATION SUITE
+ * Tests Scenarios A through O against live Supabase PostgreSQL, Supabase Storage, and official Gemini API.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -46,10 +46,10 @@ function record(scenario, name, status, details = '') {
 
 async function runStep7Suite() {
   console.log('=============================================================');
-  console.log('🧪 RUNNING STEP 7: OPENAI AI PROCESSING VERIFICATION (A through O)');
-  console.log(`Target Backend:   ${BACKEND_URL}`);
-  console.log(`Target Supabase:  ${SUPABASE_URL}`);
-  console.log(`OpenAI Model:     ${process.env.OPENAI_MODEL || 'gpt-4o-mini'}`);
+  console.log('🧪 RUNNING STEP 7: GEMINI AI PROCESSING VERIFICATION (A through O)');
+  console.log('Target Backend:   ' + 'http://localhost:5000');
+  console.log('Target Supabase:  ' + 'https://xtgusxqrgzydzmyqihoq.supabase.co');
+  console.log(`Gemini Model:     ${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}`);
   console.log('=============================================================\n');
 
   let ownerUser = null;
@@ -92,7 +92,7 @@ async function runStep7Suite() {
       .from('workspaces')
       .insert({
         name: 'Step 7 Primary AI Workspace',
-        description: 'OpenAI verification workspace',
+        description: 'Gemini verification workspace',
         created_by: ownerUser.id
       })
       .select()
@@ -198,7 +198,7 @@ async function runStep7Suite() {
     // -------------------------------------------------------------
     // SCENARIO A: AUTHENTICATED USER → SUMMARIZE OWN FILE
     // -------------------------------------------------------------
-    console.log('\nA. Testing Summarize Endpoint with OpenAI...');
+    console.log('\nA. Testing Summarize Endpoint with Gemini...');
     let isQuotaExhausted = false;
     const sumRes = await fetch(`${BACKEND_URL}/api/ai/summarize`, {
       method: 'POST',
@@ -214,7 +214,7 @@ async function runStep7Suite() {
     if (sumRes.status === 429 || sumJson.error?.code === 'AI_RATE_LIMITED') {
       isQuotaExhausted = true;
       record('A', 'Authenticated User → Summarize Own File', 'NOT TESTED',
-        `External OpenAI account quota exhausted (insufficient_quota: You have no credits remaining). Reported as NOT TESTED without faking success.`
+        `External Gemini account quota exhausted (insufficient_quota: You have no credits remaining). Reported as NOT TESTED without faking success.`
       );
     } else if (!sumRes.ok || !sumJson.success || !sumJson.data?.summary) {
       throw new Error(`Summarize failed (${sumRes.status}): ${JSON.stringify(sumJson)}`);
@@ -227,10 +227,10 @@ async function runStep7Suite() {
     // -------------------------------------------------------------
     // SCENARIO B: AUTHENTICATED USER → ANALYZE OWN FILE
     // -------------------------------------------------------------
-    console.log('\nB. Testing Analyze Endpoint with OpenAI...');
+    console.log('\nB. Testing Analyze Endpoint with Gemini...');
     if (isQuotaExhausted) {
       record('B', 'Authenticated User → Analyze Own File', 'NOT TESTED',
-        `External OpenAI account quota exhausted (insufficient_quota). Reported as NOT TESTED without faking success.`
+        `External Gemini account quota exhausted (insufficient_quota). Reported as NOT TESTED without faking success.`
       );
     } else {
       const anRes = await fetch(`${BACKEND_URL}/api/ai/analyze`, {
@@ -254,10 +254,10 @@ async function runStep7Suite() {
     // -------------------------------------------------------------
     // SCENARIO C: AUTHENTICATED USER → EXTRACT OWN FILE
     // -------------------------------------------------------------
-    console.log('\nC. Testing Extract Claims Endpoint with OpenAI...');
+    console.log('\nC. Testing Extract Claims Endpoint with Gemini...');
     if (isQuotaExhausted) {
       record('C', 'Authenticated User → Extract Own File', 'NOT TESTED',
-        `External OpenAI account quota exhausted (insufficient_quota). Reported as NOT TESTED without faking success.`
+        `External Gemini account quota exhausted (insufficient_quota). Reported as NOT TESTED without faking success.`
       );
     } else {
       const extRes = await fetch(`${BACKEND_URL}/api/ai/extract`, {
@@ -281,10 +281,10 @@ async function runStep7Suite() {
     // -------------------------------------------------------------
     // SCENARIO D: AUTHENTICATED USER → GENERATE
     // -------------------------------------------------------------
-    console.log('\nD. Testing Generate Deliverables Endpoint with OpenAI...');
+    console.log('\nD. Testing Generate Deliverables Endpoint with Gemini...');
     if (isQuotaExhausted) {
       record('D', 'Authenticated User → Generate Deliverables', 'NOT TESTED',
-        `External OpenAI account quota exhausted (insufficient_quota). Reported as NOT TESTED without faking success.`
+        `External Gemini account quota exhausted (insufficient_quota). Reported as NOT TESTED without faking success.`
       );
     } else {
       const genRes = await fetch(`${BACKEND_URL}/api/ai/generate`, {
@@ -368,13 +368,13 @@ async function runStep7Suite() {
     record('G', 'Missing File → 404', 'PASS', `Returned HTTP 404 FILE_NOT_FOUND`);
 
     // -------------------------------------------------------------
-    // SCENARIO H: INVALID OPENAI CREDENTIALS → SAFE FAILURE
+    // SCENARIO H: INVALID GEMINI CREDENTIALS → SAFE FAILURE
     // -------------------------------------------------------------
-    console.log('\nH. Testing Invalid OpenAI Credentials Handling...');
-    const { openaiService } = await import('../src/services/ai/openai.service.js');
+    console.log('\nH. Testing Invalid Gemini Credentials Handling...');
+    const { geminiService } = await import('../src/services/ai/gemini.service.js');
     let caughtInvalidKey = false;
     try {
-      await openaiService.executeStructuredPrompt(
+      await geminiService.executeStructuredPrompt(
         {
           messages: [{ role: 'system', content: 'Say hello' }, { role: 'user', content: 'Hi' }],
           response_format: { type: 'json_schema', json_schema: { name: 'test', strict: true, schema: { type: 'object', properties: { msg: { type: 'string' } }, required: ['msg'], additionalProperties: false } } }
@@ -387,14 +387,14 @@ async function runStep7Suite() {
         throw new Error(`Expected error code 'AI_AUTH_FAILED', received '${err.code}'`);
       }
       if (err.message.includes('sk-invalidkey12345678901234567890')) {
-        throw new Error('Error message leaked raw invalid OpenAI API key!');
+        throw new Error('Error message leaked raw invalid Gemini API key!');
       }
     }
     if (!caughtInvalidKey) {
-      throw new Error('Invalid OpenAI credentials did not trigger failure!');
+      throw new Error('Invalid Gemini credentials did not trigger failure!');
     }
 
-    record('H', 'Invalid OpenAI Credentials → Safe Failure', 'PASS', `Handled invalid credentials safely with code AI_AUTH_FAILED without leaking keys`);
+    record('H', 'Invalid Gemini Credentials → Safe Failure', 'PASS', `Handled invalid credentials safely with code AI_AUTH_FAILED without leaking keys`);
 
     // -------------------------------------------------------------
     // SCENARIO I: TIMEOUT → AI_TIMEOUT
@@ -402,7 +402,7 @@ async function runStep7Suite() {
     console.log('\nI. Testing Timeout Abort Handling (AI_TIMEOUT)...');
     let caughtTimeout = false;
     try {
-      await openaiService.executeStructuredPrompt(
+      await geminiService.executeStructuredPrompt(
         {
           messages: [{ role: 'system', content: 'Say hello' }, { role: 'user', content: 'Hi' }],
           response_format: { type: 'json_schema', json_schema: { name: 'test', strict: true, schema: { type: 'object', properties: { msg: { type: 'string' } }, required: ['msg'], additionalProperties: false } } }
@@ -459,7 +459,7 @@ async function runStep7Suite() {
     console.log('\nK. Verifying ai_requests Database Persistence...');
     if (isQuotaExhausted) {
       record('K', 'Successful Request → ai_requests Row Created', 'NOT TESTED',
-        `Requires successful live OpenAI completion which was blocked by external account quota exhaustion.`
+        `Requires successful live Gemini completion which was blocked by external account quota exhaustion.`
       );
     } else {
       const { data: dbAiReq } = await adminClient
@@ -501,7 +501,7 @@ async function runStep7Suite() {
     // -------------------------------------------------------------
     // SCENARIO M: API KEY NOT PRESENT IN FRONTEND
     // -------------------------------------------------------------
-    console.log('\nM. Scanning Frontend Runtime Code for OPENAI_API_KEY...');
+    console.log('\nM. Scanning Frontend Runtime Code for GEMINI_API_KEY...');
     const frontendDir = path.resolve(__dirname, '../../frontend/src');
     function checkNoOpenAiKey(dir) {
       const files = fs.readdirSync(dir, { withFileTypes: true });
@@ -511,28 +511,28 @@ async function runStep7Suite() {
           checkNoOpenAiKey(fullPath);
         } else if (/\.(ts|tsx|js|jsx)$/.test(file.name)) {
           const src = fs.readFileSync(fullPath, 'utf8');
-          if (src.includes('OPENAI_API_KEY')) {
-            throw new Error(`OPENAI_API_KEY leaked in frontend file: ${fullPath}`);
+          if (src.includes('GEMINI_API_KEY')) {
+            throw new Error(`GEMINI_API_KEY leaked in frontend file: ${fullPath}`);
           }
         }
       }
     }
     checkNoOpenAiKey(frontendDir);
 
-    record('M', 'API Key Not Present in Frontend', 'PASS', `0 occurrences of OPENAI_API_KEY in frontend source code`);
+    record('M', 'API Key Not Present in Frontend', 'PASS', `0 occurrences of GEMINI_API_KEY in frontend source code`);
 
     // -------------------------------------------------------------
     // SCENARIO N: API KEY NOT LOGGED
     // -------------------------------------------------------------
-    console.log('\nN. Verifying OpenAI API Key Redaction in Logs...');
+    console.log('\nN. Verifying Gemini API Key Redaction in Logs...');
     const { redactSecrets } = await import('../src/utils/logger.js');
-    const sensitiveLog = `Executing model gpt-4o with secret apiKey: ${process.env.OPENAI_API_KEY || 'PLACEHOLDER_TEST_KEY_NOT_REAL'}`;
+    const sensitiveLog = `Executing model gpt-4o with secret apiKey: ${process.env.GEMINI_API_KEY || 'PLACEHOLDER_TEST_KEY_NOT_REAL'}`;
     const redacted = redactSecrets(sensitiveLog);
-    if (process.env.OPENAI_API_KEY && redacted.includes(process.env.OPENAI_API_KEY.trim())) {
-      throw new Error('Logger failed to redact OPENAI_API_KEY!');
+    if (process.env.GEMINI_API_KEY && redacted.includes(process.env.GEMINI_API_KEY.trim())) {
+      throw new Error('Logger failed to redact GEMINI_API_KEY!');
     }
 
-    record('N', 'API Key Not Logged / Redacted Safely', 'PASS', `OpenAI API key and Bearer tokens are redacted automatically in logging sinks`);
+    record('N', 'API Key Not Logged / Redacted Safely', 'PASS', `Gemini API key and Bearer tokens are redacted automatically in logging sinks`);
 
     // -------------------------------------------------------------
     // SCENARIO O: EXISTING UPLOAD / OCR WORKFLOW STILL WORKS
@@ -582,7 +582,7 @@ async function runStep7Suite() {
     record('O', 'Existing Upload/OCR/Download/Delete Workflow Still Works', 'PASS', `Storage & OCR regression check passed with zero regressions`);
 
     console.log('\n=============================================================');
-    console.log('FINAL STEP 7 OPENAI AI VERIFICATION RESULTS:');
+    console.log('FINAL STEP 7 GEMINI AI VERIFICATION RESULTS:');
     console.log(`PASS: ${results.filter(r => r.status === 'PASS').length} | FAIL: ${results.filter(r => r.status === 'FAIL').length} | NOT TESTED: ${results.filter(r => r.status === 'NOT TESTED').length}`);
     console.log('=============================================================\n');
 

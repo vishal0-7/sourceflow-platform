@@ -114,7 +114,7 @@ export function createApp() {
     
     const dbStatus = dbConfigured ? 'supabase-postgresql' : (env.DEMO_MODE ? 'in-memory-demo' : 'not_configured');
     const storageStatus = (dbConfigured && Boolean(env.SUPABASE_SERVICE_ROLE_KEY)) ? 'supabase-storage' : (env.DEMO_MODE ? 'local-disk-demo' : 'not_configured');
-    const aiStatus = Boolean(env.OPENAI_API_KEY) ? 'openai' : 'not_configured';
+    const aiStatus = Boolean(env.GEMINI_API_KEY) ? 'gemini' : 'not_configured';
     const ocrStatus = Boolean(env.OCR_API_KEY) ? 'ocr-space' : 'direct-extract';
     const translationStatus = Boolean(env.LIBRETRANSLATE_URL) ? 'libretranslate' : (env.DEMO_MODE ? 'simulated' : 'not_configured');
 

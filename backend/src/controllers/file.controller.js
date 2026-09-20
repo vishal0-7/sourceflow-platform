@@ -26,9 +26,12 @@ export class FileController {
       // Validate before upload
       const validation = validateFileMetadata(originalName, mimeType, fileBuffer.length);
       if (!validation.valid) {
+        const code = (validation.code === 'DISALLOWED_EXTENSION' || validation.code === 'MIME_EXTENSION_MISMATCH')
+          ? 'INVALID_FILE_TYPE'
+          : validation.code;
         return res.status(400).json({
           success: false,
-          error: { code: validation.code, message: validation.message },
+          error: { code, message: validation.message },
           timestamp: new Date().toISOString()
         });
       }

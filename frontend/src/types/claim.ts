@@ -41,4 +41,9 @@ export interface GroundingClaim {
   reviewerNote?: string;
   modifiedBy?: string;
   modifiedAt?: string;
+  contextLeading?: string;
+  contextTrailing?: string;
+  groundingHash?: string;
+  byteRange?: [number, number];
+  auditTrail?: any[];
 }

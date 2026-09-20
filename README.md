@@ -112,6 +112,6 @@ FRONTEND_URL=http://localhost:5173
 # External providers (Server-side ONLY):
 # SUPABASE_URL=
 # SUPABASE_SERVICE_ROLE_KEY=
-# OPENAI_API_KEY=
+# GEMINI_API_KEY=
 # OCR_API_KEY=
 ```

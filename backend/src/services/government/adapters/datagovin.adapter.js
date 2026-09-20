@@ -153,7 +153,15 @@ export class DataGovInAdapter extends GovernmentAdapter {
       }
     }
 
-    // In DEMO_MODE or when API key is pending registration, return curated Indian open datasets
+    // If not configured and DEMO_MODE=false, reject with 503 rather than leaking demo datasets
+    if (!this.isConfigured() && !env.DEMO_MODE) {
+      const err = new Error('data.gov.in API key is not configured on the server. Configure DATA_GOV_IN_API_KEY in backend/.env or set DEMO_MODE=true.');
+      err.code = 'GOV_SERVICE_NOT_CONFIGURED';
+      err.statusCode = 503;
+      throw err;
+    }
+
+    // In DEMO_MODE, return curated Indian open datasets
     let results = CURATED_INDIAN_GOV_DATASETS;
     if (cleanQuery) {
       results = results.filter(d =>
@@ -193,21 +201,30 @@ export class DataGovInAdapter extends GovernmentAdapter {
 
     const cleanId = id.trim();
 
-    // Check curated datasets first
-    const match = CURATED_INDIAN_GOV_DATASETS.find(d => d.id === cleanId);
-    if (match) {
-      return {
-        id: match.id,
-        title: match.title,
-        agency: match.agency,
-        url: match.url,
-        lastUpdated: match.lastUpdated,
-        summary: match.summary,
-        recordCount: match.recordCount,
-        category: match.category,
-        source: this.name,
-        sampleTelemetry: match.sampleTelemetry
-      };
+    // Check curated datasets in DEMO_MODE
+    if (env.DEMO_MODE) {
+      const match = CURATED_INDIAN_GOV_DATASETS.find(d => d.id === cleanId);
+      if (match) {
+        return {
+          id: match.id,
+          title: match.title,
+          agency: match.agency,
+          url: match.url,
+          lastUpdated: match.lastUpdated,
+          summary: match.summary,
+          recordCount: match.recordCount,
+          category: match.category,
+          source: this.name,
+          sampleTelemetry: match.sampleTelemetry
+        };
+      }
+    }
+
+    if (!this.isConfigured() && !env.DEMO_MODE) {
+      const err = new Error('data.gov.in API key is not configured on the server. Configure DATA_GOV_IN_API_KEY in backend/.env or set DEMO_MODE=true.');
+      err.code = 'GOV_SERVICE_NOT_CONFIGURED';
+      err.statusCode = 503;
+      throw err;
     }
 
     if (this.isConfigured() && !env.DEMO_MODE) {

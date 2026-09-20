@@ -357,105 +357,129 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Pipeline Actions
   const uploadSourceFile = async (file: File) => {
-    const uploadRes = await documentService.uploadDocument(file);
-    const newSource = uploadRes.data;
-
-    const sha256Hash = newSource?.sha256 || newSource?.source_hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
-    const auditBlock = await auditService.recordAuditEvent({
-      jobId: transformation.id,
-      actor: currentUser.name,
-      actorRole: currentUser.role,
-      action: 'DOCUMENT_UPLOADED',
-      details: `Uploaded ${newSource?.name || file.name} (${newSource?.size || '1.4 MB'}) with SHA-256: ${sha256Hash.slice(0, 16)}...`
-    });
-
-    let initialId = transformation.id;
     try {
-      const tRes = await transformationService.createTransformation({
-        fileId: newSource?.id,
-        title: file.name.replace(/\.[^/.]+$/, ''),
-        profiles: transformation.profiles
-      });
-      if (tRes.data?.id) {
-        initialId = tRes.data.id;
+      const uploadRes = await documentService.uploadDocument(file);
+      if (!uploadRes.success) {
+        throw new Error(uploadRes.message || 'Upload failed');
       }
-    } catch (tErr) {
-      console.warn('Backend transformation sync note:', tErr);
+      const newSource = uploadRes.data;
+
+      const sha256Hash = newSource?.sha256 || newSource?.source_hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+      const auditBlock = await auditService.recordAuditEvent({
+        jobId: transformation.id,
+        actor: currentUser.name,
+        actorRole: currentUser.role,
+        action: 'DOCUMENT_UPLOADED',
+        details: `Uploaded ${newSource?.name || file.name} (${newSource?.size || '1.4 MB'}) with SHA-256: ${sha256Hash.slice(0, 16)}...`
+      });
+
+      let initialId = transformation.id;
+      try {
+        const tRes = await transformationService.createTransformation({
+          fileId: newSource?.id,
+          title: file.name.replace(/\.[^/.]+$/, ''),
+          profiles: transformation.profiles
+        });
+        if (tRes.data?.id) {
+          initialId = tRes.data.id;
+        }
+      } catch (tErr) {
+        console.warn('Backend transformation sync note:', tErr);
+      }
+
+      setTransformation(prev => ({
+        ...prev,
+        id: initialId || prev.id,
+        title: file.name.replace(/\.[^/.]+$/, ''),
+        source: {
+          ...newSource,
+          sha256: sha256Hash
+        },
+        audit: [...prev.audit, auditBlock]
+      }));
+
+      showToast('Source uploaded • SHA-256 calculated ✓');
+    } catch (err: any) {
+      showToast(`Upload error: ${err.message}`);
+      throw err;
     }
-
-    setTransformation(prev => ({
-      ...prev,
-      id: initialId || prev.id,
-      title: file.name.replace(/\.[^/.]+$/, ''),
-      source: {
-        ...newSource,
-        sha256: sha256Hash
-      },
-      audit: [...prev.audit, auditBlock]
-    }));
-
-    showToast('Source uploaded • SHA-256 calculated ✓');
   };
 
   const ingestSourceUrl = async (url: string) => {
-    const uploadRes = await documentService.ingestUrl(url);
-    const newSource = uploadRes.data;
-    const urlSha256 = newSource?.sha256 || newSource?.source_hash || '4a8f9c2d1e0b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a21';
-
-    const auditBlock = await auditService.recordAuditEvent({
-      jobId: transformation.id,
-      actor: currentUser.name,
-      actorRole: currentUser.role,
-      action: 'DOCUMENT_UPLOADED',
-      details: `Ingested source URL ${url} with SHA-256: ${urlSha256.slice(0, 16)}...`
-    });
-
-    let initialId = transformation.id;
     try {
-      const tRes = await transformationService.createTransformation({
-        fileId: newSource?.id,
-        title: newSource?.name || url,
-        profiles: transformation.profiles
-      });
-      if (tRes.data?.id) {
-        initialId = tRes.data.id;
+      const uploadRes = await documentService.ingestUrl(url);
+      if (!uploadRes.success) {
+        throw new Error(uploadRes.message || 'Ingest failed');
       }
-    } catch (tErr) {
-      console.warn('Backend transformation sync note:', tErr);
+      const newSource = uploadRes.data;
+      const urlSha256 = newSource?.sha256 || newSource?.source_hash || '4a8f9c2d1e0b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a21';
+
+      const auditBlock = await auditService.recordAuditEvent({
+        jobId: transformation.id,
+        actor: currentUser.name,
+        actorRole: currentUser.role,
+        action: 'DOCUMENT_UPLOADED',
+        details: `Ingested source URL ${url} with SHA-256: ${urlSha256.slice(0, 16)}...`
+      });
+
+      let initialId = transformation.id;
+      try {
+        const tRes = await transformationService.createTransformation({
+          fileId: newSource?.id,
+          title: newSource?.name || url,
+          profiles: transformation.profiles
+        });
+        if (tRes.data?.id) {
+          initialId = tRes.data.id;
+        }
+      } catch (tErr) {
+        console.warn('Backend transformation sync note:', tErr);
+      }
+
+      setTransformation(prev => ({
+        ...prev,
+        id: initialId || prev.id,
+        title: newSource?.name || url,
+        source: {
+          ...newSource,
+          sha256: urlSha256
+        },
+        audit: [...prev.audit, auditBlock]
+      }));
+
+      showToast('Web source ingested • SHA-256 calculated ✓');
+    } catch (err: any) {
+      showToast(`Ingest error: ${err.message}`);
+      throw err;
     }
-
-    setTransformation(prev => ({
-      ...prev,
-      id: initialId || prev.id,
-      title: newSource?.name || url,
-      source: {
-        ...newSource,
-        sha256: urlSha256
-      },
-      audit: [...prev.audit, auditBlock]
-    }));
-
-    showToast('Web source ingested • SHA-256 calculated ✓');
   };
 
   const analyzeSource = async () => {
-    const analysisRes = await documentService.analyzeDocument(transformation.source.id);
+    try {
+      const analysisRes = await documentService.analyzeDocument(transformation.source.id);
+      if (!analysisRes.success) {
+        throw new Error(analysisRes.message || 'Analysis failed');
+      }
 
-    const auditBlock = await auditService.recordAuditEvent({
-      jobId: transformation.id,
-      actor: 'System Automated',
-      actorRole: 'System Automated',
-      action: 'INTELLIGENCE_EXTRACTED',
-      details: `Extracted ${analysisRes.data.entities} entities, ${analysisRes.data.evidence} evidence anchors, and ${analysisRes.data.findings} key findings.`
-    });
+      const auditBlock = await auditService.recordAuditEvent({
+        jobId: transformation.id,
+        actor: 'System Automated',
+        actorRole: 'System Automated',
+        action: 'INTELLIGENCE_EXTRACTED',
+        details: `Extracted ${analysisRes.data.entities} entities, ${analysisRes.data.evidence} evidence anchors, and ${analysisRes.data.findings} key findings.`
+      });
 
-    setTransformation(prev => ({
-      ...prev,
-      analysis: analysisRes.data,
-      audit: [...prev.audit, auditBlock]
-    }));
+      setTransformation(prev => ({
+        ...prev,
+        analysis: analysisRes.data,
+        audit: [...prev.audit, auditBlock]
+      }));
 
-    showToast('Source analysis complete ✓');
+      showToast('Source analysis complete ✓');
+    } catch (err: any) {
+      showToast(`Analysis error: ${err.message}`);
+      throw err;
+    }
   };
 
   const toggleProfile = (profileId: string) => {

@@ -104,7 +104,7 @@ server {
 
 - **Zero Hardcoded Secrets**: Source code contains zero API keys, database passwords, or JWT secrets.
 - **Environment Isolation**:
-  - Private secrets (`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `OCR_API_KEY`) reside exclusively in backend server environment variables.
+  - Private secrets (`SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `OCR_API_KEY`) reside exclusively in backend server environment variables.
   - Frontend code is only provided with public client keys prefixed with `VITE_`.
 - **Secret Rotation**: Rotate API keys periodically or immediately if an incident is suspected.
 

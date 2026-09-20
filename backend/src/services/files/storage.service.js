@@ -13,6 +13,7 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { PDFParse } from 'pdf-parse';
 import { getSupabaseClient, isSupabaseConfigured } from '../../config/supabase.js';
 import { env } from '../../config/env.js';
 import { documents } from '../dataStore.js';
@@ -101,7 +102,7 @@ export function validateFileMetadata(originalName, mimeType, size) {
     if (DANGEROUS_EXTENSIONS.has(extPart)) {
       return {
         valid: false,
-        code: 'INVALID_FILE_TYPE',
+        code: 'DISALLOWED_EXTENSION',
         message: `Dangerous executable file extension '${extPart}' is forbidden.`
       };
     }
@@ -111,7 +112,7 @@ export function validateFileMetadata(originalName, mimeType, size) {
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
     return {
       valid: false,
-      code: 'INVALID_FILE_TYPE',
+      code: 'DISALLOWED_EXTENSION',
       message: `Unsupported file extension '${ext}'. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`
     };
   }
@@ -121,7 +122,7 @@ export function validateFileMetadata(originalName, mimeType, size) {
   if (!ALLOWED_MIME_TYPES.includes(normalizedMime)) {
     return {
       valid: false,
-      code: 'INVALID_FILE_TYPE',
+      code: 'MIME_EXTENSION_MISMATCH',
       message: `Unsupported MIME type '${mimeType}'. Allowed types: PDF, DOCX, XLSX, PNG, JPG/JPEG.`
     };
   }
@@ -131,7 +132,7 @@ export function validateFileMetadata(originalName, mimeType, size) {
   if (!allowedMimesForExt.includes(normalizedMime)) {
     return {
       valid: false,
-      code: 'INVALID_FILE_TYPE',
+      code: 'MIME_EXTENSION_MISMATCH',
       message: `Declared MIME type '${mimeType}' does not match file extension '${ext}'. Expected: ${allowedMimesForExt.join(', ')}`
     };
   }
@@ -183,6 +184,22 @@ export class StorageService {
     const storagePath = `workspace-${workspaceId}/${storedName}`;
     const sha256 = crypto.createHash('sha256').update(fileBuffer).digest('hex');
     const sizeMB = (fileBuffer.length / (1024 * 1024)).toFixed(2);
+    
+    let pageCount = 1;
+    if (originalName.toLowerCase().endsWith('.pdf') && PDFParse) {
+      let parser;
+      try {
+        parser = new PDFParse({ data: fileBuffer, verbosity: 0 });
+        const info = await parser.getInfo();
+        pageCount = info?.total || 1;
+      } catch (e) {
+        console.warn(`[StorageService] Warning: Could not parse page count for PDF ${originalName}:`, e.message);
+      } finally {
+        if (parser && typeof parser.destroy === 'function') {
+          try { await parser.destroy(); } catch {}
+        }
+      }
+    }
 
     // 2. Real Supabase Storage Flow
     if (isSupabaseConfigured()) {
@@ -205,19 +222,29 @@ export class StorageService {
       }
 
       // Insert metadata into PostgreSQL files table
+      const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      const validUploadedBy = isUuid(uploadedBy) ? uploadedBy : null;
+      let dbWorkspaceId = workspaceId;
+      if (!isUuid(workspaceId)) {
+        const { data: wsRow } = await supabase.from('workspaces').select('id').limit(1).maybeSingle();
+        if (wsRow?.id) {
+          dbWorkspaceId = wsRow.id;
+        }
+      }
+
       const { data: fileRecord, error: dbError } = await supabase
         .from('files')
         .insert({
           id: fileId,
-          workspace_id: workspaceId,
-          uploaded_by: uploadedBy,
+          workspace_id: dbWorkspaceId,
+          uploaded_by: validUploadedBy,
           original_name: originalName,
           stored_name: storedName,
           mime_type: mimeType,
           file_size: fileBuffer.length,
           storage_path: storagePath,
           sha256,
-          page_count: originalName.toLowerCase().endsWith('.pdf') ? 14 : 1,
+          page_count: pageCount,
           status: 'uploaded'
         })
         .select()
@@ -263,8 +290,8 @@ export class StorageService {
       mime_type: mimeType,
       file_size: fileBuffer.length,
       size: `${sizeMB} MB`,
-      pages: originalName.toLowerCase().endsWith('.pdf') ? 14 : 1,
-      page_count: originalName.toLowerCase().endsWith('.pdf') ? 14 : 1,
+      pages: pageCount,
+      page_count: pageCount,
       storage_path: storagePath,
       local_disk_path: localFilePath,
       sha256,
@@ -285,9 +312,10 @@ export class StorageService {
   async getDownloadAccess(fileId, workspaceId) {
     // 1. Supabase Flow
     if (isSupabaseConfigured()) {
+      const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
       const supabase = getSupabaseClient();
       let query = supabase.from('files').select('*').eq('id', fileId);
-      if (workspaceId) {
+      if (workspaceId && isUuid(workspaceId)) {
         query = query.eq('workspace_id', workspaceId);
       }
       const { data: file, error: fetchErr } = await query.single();
@@ -361,9 +389,10 @@ export class StorageService {
   async deleteFile(fileId, workspaceId) {
     // 1. Supabase Flow
     if (isSupabaseConfigured()) {
+      const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
       const supabase = getSupabaseClient();
       let query = supabase.from('files').select('*').eq('id', fileId);
-      if (workspaceId) {
+      if (workspaceId && isUuid(workspaceId)) {
         query = query.eq('workspace_id', workspaceId);
       }
       const { data: file, error: fetchErr } = await query.single();
@@ -436,12 +465,13 @@ export class StorageService {
    */
   async listFiles(workspaceId) {
     if (isSupabaseConfigured()) {
+      const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .order('created_at', { ascending: false });
+      let query = supabase.from('files').select('*');
+      if (workspaceId && isUuid(workspaceId)) {
+        query = query.eq('workspace_id', workspaceId);
+      }
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         const err = new Error(`Failed to list files: ${error.message}`);
@@ -461,9 +491,10 @@ export class StorageService {
    */
   async getFileById(fileId, workspaceId) {
     if (isSupabaseConfigured()) {
+      const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
       const supabase = getSupabaseClient();
       let query = supabase.from('files').select('*').eq('id', fileId);
-      if (workspaceId) query = query.eq('workspace_id', workspaceId);
+      if (workspaceId && isUuid(workspaceId)) query = query.eq('workspace_id', workspaceId);
       const { data, error } = await query.single();
       if (error || !data) return null;
       return data;

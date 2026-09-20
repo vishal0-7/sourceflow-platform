@@ -83,10 +83,10 @@ export const Stage06Deliver: React.FC<Stage06DeliverProps> = ({ onBack }) => {
     }
   };
   
-  const [subject, setSubject] = useState(transformation.delivery.subject || 'Cybersecurity Threat Intelligence Update');
+  const [subject, setSubject] = useState(transformation.delivery.subject || `${transformation.source.name || 'Document'} Executive Briefing`);
   const [messageBody, setMessageBody] = useState(
     transformation.delivery.message ||
-    'Please find attached the formally verified Cybersecurity Threat Intelligence briefing and remediation directives, attested through 23 claims verified against primary source telemetry.'
+    `Please find attached the formally verified ${transformation.source.name || 'threat intelligence'} briefing and remediation directives, attested through ${transformation.claims?.length || 0} claims verified against primary source telemetry.`
   );
 
   const [recipients, setRecipients] = useState([
@@ -315,7 +315,7 @@ export const Stage06Deliver: React.FC<Stage06DeliverProps> = ({ onBack }) => {
               <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
             )}
             <span className="text-stone-700 font-medium">
-              {unsupportedClaimsCount === 0 ? 'All 23 claims resolved' : `${unsupportedClaimsCount} claims pending`}
+              {unsupportedClaimsCount === 0 ? `All ${transformation.claims?.length || 0} claims resolved` : `${unsupportedClaimsCount} claims pending`}
             </span>
           </div>
 

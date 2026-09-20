@@ -620,6 +620,18 @@ export class ClaimsService {
 
     return this.formatForReviewUI(record);
   }
+
+  /**
+   * Batch saves claims for a workspace
+   */
+  async saveClaims(workspaceId, claimsList = []) {
+    const saved = [];
+    for (const item of claimsList) {
+      const res = await this.createClaim({ ...item, workspaceId });
+      saved.push(res);
+    }
+    return saved;
+  }
 }
 
 export const claimsService = new ClaimsService();

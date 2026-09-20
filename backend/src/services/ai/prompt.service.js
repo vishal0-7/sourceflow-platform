@@ -5,7 +5,7 @@
  * Enforces:
  * - Clear separation between system directives and untrusted document content
  * - Strict defense against prompt injection (<untrusted_document_content> delimiters)
- * - Strict JSON Schemas for OpenAI Structured Outputs
+ * - Strict JSON Schemas for Gemini Structured Outputs
  * - No client override of system instructions
  */
 
@@ -36,7 +36,7 @@ CRITICAL SECURITY & INTEGRITY DIRECTIVES:
 5. All facts, claims, dates, and risks extracted must be strictly grounded in the document text. Do not invent or hallucinate information not supported by the document. If an item is unknown, leave it empty or indicate as not specified in the source.`;
 
 // -----------------------------------------------------------------------------
-// JSON Schemas for OpenAI Structured Outputs (strict: true)
+// JSON Schemas for Gemini Structured Outputs (strict: true)
 // -----------------------------------------------------------------------------
 
 export const SCHEMAS = {
@@ -224,13 +224,28 @@ export const SCHEMAS = {
       required: ['deliverables'],
       additionalProperties: false
     }
+  },
+
+  classify: {
+    name: 'document_classification',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', description: 'Primary topic or sector category of the document' },
+        confidence: { type: 'number', description: 'Confidence score between 0.0 and 1.0' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Classification tags' }
+      },
+      required: ['category', 'confidence', 'tags'],
+      additionalProperties: false
+    }
   }
 };
 
 export class PromptService {
   /**
    * Constructs prompt messages and response_format for a specific operation.
-   * @param {string} operation - 'summarize' | 'analyze' | 'extract' | 'generate'
+   * @param {string} operation - 'summarize' | 'analyze' | 'extract' | 'generate' | 'classify'
    * @param {string} documentText - Extracted text from document
    * @param {Object} [context] - Controlled operational parameters (e.g. profiles)
    */
@@ -270,26 +285,31 @@ Also extract any important dates and compliance requirements.`;
         operationPrompt = `Generate audience-adapted communication deliverables based strictly on the document data for the following audience profiles:\n${profilesDesc}\n\nEnsure every deliverable is grounded in the provided document content.`;
         break;
 
+      case 'classify':
+        operationPrompt = `Classify the provided document into its primary category, tags, and provide a confidence score.`;
+        break;
+
       default:
         operationPrompt = `Analyze the document according to the required schema.`;
     }
 
-    const messages = [
-      {
-        role: 'system',
-        content: SYSTEM_INSTRUCTION_BASE
-      },
-      {
-        role: 'user',
-        content: `${operationPrompt}\n\nDocument Data:\n${DELIMITER_START}\n${sanitizedText}\n${DELIMITER_END}`
-      }
-    ];
+    const contents = `${operationPrompt}\n\nDocument Data:\n${DELIMITER_START}\n${sanitizedText}\n${DELIMITER_END}`;
 
     return {
-      messages,
+      systemInstruction: SYSTEM_INSTRUCTION_BASE,
+      contents,
+      responseSchema: schemaDef.schema || schemaDef,
+      messages: [
+        { role: 'system', content: SYSTEM_INSTRUCTION_BASE },
+        { role: 'user', content: contents }
+      ],
       response_format: {
         type: 'json_schema',
-        json_schema: schemaDef
+        json_schema: {
+          name: schemaDef.name || operation,
+          strict: true,
+          schema: schemaDef.schema || schemaDef
+        }
       }
     };
   }

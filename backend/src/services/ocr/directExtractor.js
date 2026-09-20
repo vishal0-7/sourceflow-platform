@@ -5,16 +5,7 @@
  */
 
 import path from 'path';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-let PDFParse;
-try {
-  const pdfModule = require('pdf-parse');
-  PDFParse = pdfModule.PDFParse;
-} catch (err) {
-  console.warn('[DirectExtractor] pdf-parse load notice:', err.message);
-}
+import { PDFParse } from 'pdf-parse';
 
 export const TEXT_EXTENSIONS = ['.txt', '.md', '.markdown', '.csv', '.json', '.xml', '.html', '.log'];
 export const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.tiff', '.bmp'];
@@ -61,6 +52,7 @@ export async function tryDirectExtraction(fileBuffer, originalName, mimeType) {
     return {
       success: true,
       text: rawText,
+      extractedText: rawText,
       provider: 'direct_text',
       isScanned: false,
       pageCount: 1,
@@ -83,6 +75,7 @@ export async function tryDirectExtraction(fileBuffer, originalName, mimeType) {
           return {
             success: true,
             text: extractedText,
+            extractedText: extractedText,
             provider: 'pdf_parse',
             isScanned: false,
             pageCount,

@@ -5,7 +5,7 @@ import { env } from '../src/config/env.js';
 import { workspaceService } from '../src/services/workspace.service.js';
 import { storageService } from '../src/services/files/storage.service.js';
 import { aiPipelineService } from '../src/services/ai/aiPipeline.service.js';
-import { openaiService } from '../src/services/ai/openai.service.js';
+import { geminiService } from '../src/services/ai/gemini.service.js';
 
 describe('STEP 10: Production Environment Constraints', () => {
   const BACKEND_URL = 'http://localhost:5000';
@@ -81,10 +81,10 @@ describe('STEP 10: Production Environment Constraints', () => {
   });
   
   test('Scenario D: AI Service crashes securely if key is missing in production', async () => {
-    const originalApiKey = env.OPENAI_API_KEY;
-    const originalInstanceKey = openaiService.apiKey;
-    env.OPENAI_API_KEY = ''; // ensure missing
-    openaiService.apiKey = '';
+    const originalApiKey = env.GEMINI_API_KEY;
+    const originalInstanceKey = geminiService.apiKey;
+    env.GEMINI_API_KEY = ''; // ensure missing
+    geminiService.apiKey = '';
     
     try {
       await assert.rejects(
@@ -99,8 +99,8 @@ describe('STEP 10: Production Environment Constraints', () => {
         'Should throw 503 AI_AUTH_FAILED without returning fake data'
       );
     } finally {
-      env.OPENAI_API_KEY = originalApiKey;
-      openaiService.apiKey = originalInstanceKey;
+      env.GEMINI_API_KEY = originalApiKey;
+      geminiService.apiKey = originalInstanceKey;
     }
   });
 });

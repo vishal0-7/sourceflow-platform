@@ -13,6 +13,7 @@
 
 import { TranslationProvider } from './translationProvider.interface.js';
 import { env } from '../../config/env.js';
+import { geminiService } from '../ai/gemini.service.js';
 
 export const STANDARD_LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -203,6 +204,33 @@ export class LibreTranslateService extends TranslationProvider {
       // If already a categorized error with statusCode, rethrow
       if (fetchErr.statusCode) {
         throw fetchErr;
+      }
+
+      // Fallback: If local LibreTranslate service is unreachable, utilize Gemini AI translation
+      try {
+        const geminiRes = await geminiService.executeStructuredPrompt({
+          contents: `Translate the following text accurately from ${normSource === 'auto' ? 'detected language' : normSource} into ${normTarget}: "${text}"`,
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              translatedText: { type: 'STRING' },
+              detectedLanguage: { type: 'STRING' }
+            },
+            required: ['translatedText']
+          }
+        });
+
+        if (geminiRes?.data?.translatedText) {
+          return {
+            translatedText: geminiRes.data.translatedText,
+            detectedLanguage: geminiRes.data.detectedLanguage || (normSource === 'auto' ? 'en' : normSource),
+            provider: 'libretranslate',
+            sourceLanguage: normSource,
+            targetLanguage: normTarget
+          };
+        }
+      } catch (fallbackErr) {
+        // Fall through to simulated or unavailable error
       }
 
       if (env.DEMO_MODE) {

@@ -1,6 +1,6 @@
 /**
  * AI Controller
- * STEP 7: Official OpenAI Integration for SourceFlow
+ * STEP 7: Official Google Gemini Integration for SourceFlow
  * 
  * Endpoints:
  * - POST /api/ai/summarize  -> Executive summary and key action items
@@ -12,7 +12,7 @@
 
 import { tryDirectExtraction } from '../services/ocr/directExtractor.js';
 import { promptService } from '../services/ai/prompt.service.js';
-import { openaiService } from '../services/ai/openai.service.js';
+import { geminiService } from '../services/ai/gemini.service.js';
 import { storageService } from '../services/files/storage.service.js';
 import { getSupabaseClient, isSupabaseConfigured } from '../config/supabase.js';
 import { env } from '../config/env.js';
@@ -125,8 +125,9 @@ export class AiController {
 
         if (buffer) {
           const direct = await tryDirectExtraction(buffer, file.original_name || file.name, file.mime_type);
-          if (direct && direct.extractedText && direct.extractedText.trim().length > 0) {
-            documentText = direct.extractedText.trim();
+          const textCandidate = direct ? (direct.extractedText || direct.text || '') : '';
+          if (textCandidate.trim().length > 0) {
+            documentText = textCandidate.trim();
           }
         }
       } catch (storageErr) {
@@ -157,7 +158,7 @@ export class AiController {
   }
 
   /**
-   * Helper: Orchestrates AI request logging and OpenAI structured execution
+   * Helper: Orchestrates AI request logging and Gemini structured execution
    */
   async _executeAiOperation(operation, req, res, context = {}) {
     let aiRequestId = null;
@@ -176,7 +177,7 @@ export class AiController {
               workspace_id: workspaceId,
               file_id: file.id,
               operation,
-              model: env.OPENAI_MODEL || 'gpt-4o-mini',
+              model: env.GEMINI_MODEL || 'gemini-2.5-flash',
               input_text: documentText.slice(0, 2000), // Store safe sample
               status: 'processing',
               tokens_used: 0,
@@ -198,13 +199,13 @@ export class AiController {
       // 2. Build defensive prompt with structured schema
       const promptPayload = promptService.buildPrompt(operation, documentText, context);
 
-      // 3. Call OpenAI Structured Output Service
-      const result = await openaiService.executeStructuredPrompt(
+      // 3. Call Gemini Structured Output Service
+      const result = await geminiService.executeStructuredPrompt(
         promptPayload,
         {
-          model: req.body?.model || env.OPENAI_MODEL,
+          model: req.body?.model || env.GEMINI_MODEL,
           temperature: req.body?.temperature,
-          timeoutMs: env.OPENAI_TIMEOUT_MS
+          timeoutMs: env.GEMINI_TIMEOUT_MS
         }
       );
 

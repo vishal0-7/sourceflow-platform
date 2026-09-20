@@ -15,12 +15,12 @@
     "test:production": "node --env-file=.env test/step10_production.test.js"
   },
   "dependencies": {
+    "@google/genai": "^2.23.0",
     "@supabase/supabase-js": "^2.116.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.1",
     "express": "^5.2.1",
     "multer": "^2.4.0",
-    "openai": "^7.19.0",
     "pdf-parse": "^2.4.5",
     "zod": "^4.6.5"
   }

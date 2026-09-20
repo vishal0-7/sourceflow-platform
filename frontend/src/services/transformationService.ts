@@ -168,11 +168,11 @@ export class TransformationService {
       },
       claims: initialClaims23,
       stats: {
-        totalClaims: 23,
-        supportedClaimsCount: 19,
-        unsupportedClaimsCount: 4,
-        resolvedClaimsCount: 0,
-        isApprovalBlocked: true
+        totalClaims: initialClaims23.length,
+        supportedClaimsCount: initialClaims23.filter(c => c.status === 'SUPPORTED').length,
+        unsupportedClaimsCount: initialClaims23.filter(c => c.status === 'NEEDS_REVIEW' || c.status === 'UNSUPPORTED').length,
+        resolvedClaimsCount: initialClaims23.filter(c => c.status === 'SUPPORTED' && c.auditTrail?.length).length,
+        isApprovalBlocked: initialClaims23.some(c => c.status === 'NEEDS_REVIEW' || c.status === 'UNSUPPORTED')
       }
     };
 

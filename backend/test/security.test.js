@@ -44,7 +44,7 @@ async function runSecurityTests() {
 
     const openAiKey = 'Bearer sk-abcdefghijklmnopqrstuvwxyz1234567890';
     const cleanKey = sanitizeString(openAiKey);
-    assert(!cleanKey.includes('sk-abcdefgh'), 'OpenAI keys are redacted');
+    assert(!cleanKey.includes('sk-abcdefgh'), 'Gemini keys are redacted');
 
     const dbUri = 'postgres://postgres:SuperSecretPassword123@db.supabase.co:5432/postgres';
     const cleanDb = sanitizeString(dbUri);
